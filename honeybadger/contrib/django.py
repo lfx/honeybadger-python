@@ -46,6 +46,7 @@ class DjangoPlugin(Plugin):
     """
     Plugin for generating payload from Django requests.
     """
+
     def __init__(self):
         super(DjangoPlugin, self).__init__('Django')
 
@@ -79,9 +80,17 @@ class DjangoPlugin(Plugin):
         }
 
         if hasattr(request, 'session'):
-            payload['session'] = filter_dict(dict(request.session), config.params_filters)
+            payload['session'] = filter_dict(
+                dict(request.session), config.params_filters)
+        # import pdb
+        # pdb.set_trace()
 
-        payload['params'] = filter_dict(dict(getattr(request, request.method)), config.params_filters)
+        a_method = request.method
+        if request.method == 'PUT':
+            a_method = 'POST'
+
+        payload['params'] = filter_dict(
+            dict(getattr(request, a_method)), config.params_filters)
 
         return payload
 
@@ -92,9 +101,11 @@ class DjangoHoneybadgerMiddleware(object):
         from django.conf import settings
         if getattr(settings, 'DEBUG'):
             honeybadger.configure(environment='development')
-        config_kwargs = dict([(k.lower(), v) for (k, v) in iteritems(getattr(settings, 'HONEYBADGER', {}))])
+        config_kwargs = dict([(k.lower(), v) for (k, v) in iteritems(
+            getattr(settings, 'HONEYBADGER', {}))])
         honeybadger.configure(**config_kwargs)
-        honeybadger.config.set_12factor_config()  # environment should override Django settings
+        # environment should override Django settings
+        honeybadger.config.set_12factor_config()
         default_plugin_manager.register(DjangoPlugin())
 
     def __call__(self, request):
